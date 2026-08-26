@@ -26,6 +26,7 @@ if (
   typeof globalThis.crypto === "undefined" ||
   typeof (globalThis.crypto as Crypto).subtle === "undefined"
 ) {
+if (typeof globalThis.crypto === "undefined" || !globalThis.crypto.subtle) {
   Object.defineProperty(globalThis, "crypto", {
     value: webcrypto,
     configurable: true,
