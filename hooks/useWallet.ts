@@ -11,6 +11,14 @@
 
 import { useCallback, useState } from "react";
 import { useWalletContext, Wallet } from "@/context/WalletContext";
+import {
+  submitPaymentTransaction,
+  type PaymentStatus,
+  type PendingPayment,
+  type SubmitPaymentOptions,
+  type SubmittedPayment,
+} from "@/lib/stellar/submitTransaction";
+import type { PaymentAsset, PaymentAssetIssuers } from "@/lib/stellar/buildPaymentTransaction";
 
 // ── Freighter browser extension type declaration ──────────────────────────────
 declare global {
@@ -19,7 +27,10 @@ declare global {
       isConnected: () => Promise<boolean>;
       getPublicKey: () => Promise<string>;
       requestAccess: () => Promise<string>;
-      signTransaction: (xdr: string, network: string) => Promise<string>;
+      signTransaction: (
+        xdr: string,
+        network: string,
+      ) => Promise<string | { signedTxXdr?: string }>;
     };
   }
 }
@@ -31,6 +42,16 @@ export interface FreighterState {
   publicKey: string | null;
   isConnecting: boolean;
   freighterError: string | null; // named freighterError to avoid clash with wallet context `error`
+}
+
+export interface SendPaymentInput {
+  destination: string;
+  amount: string;
+  asset: PaymentAsset;
+  memo?: string;
+  assetIssuers?: PaymentAssetIssuers;
+  onStatus?: (status: PaymentStatus) => void;
+  onSubmitted?: (payment: PendingPayment) => void;
 }
 
 export interface UseWalletReturn {
@@ -50,6 +71,7 @@ export interface UseWalletReturn {
   freighter: FreighterState;
   connectFreighter: () => Promise<void>;
   disconnectFreighter: () => void;
+  sendPayment: (input: SendPaymentInput) => Promise<SubmittedPayment>;
   // Helpers
   getWalletById: (id: string) => Wallet | undefined;
   getWalletByAddress: (address: string) => Wallet | undefined;
@@ -120,6 +142,21 @@ export function useWallet(): UseWalletReturn {
     }
   }, []);
 
+  const sendPayment = useCallback(
+    async (input: SendPaymentInput): Promise<SubmittedPayment> => {
+      if (!freighterState.isConnected || !freighterState.publicKey) {
+        throw new Error("Connect Freighter before sending a payment.");
+      }
+
+      const options: SubmitPaymentOptions = {
+        ...input,
+        source: freighterState.publicKey,
+      };
+      return submitPaymentTransaction(options);
+    },
+    [freighterState.isConnected, freighterState.publicKey],
+  );
+
   const disconnectFreighter = useCallback(() => {
     setFreighterState((s) => ({
       ...s,
@@ -176,6 +213,7 @@ export function useWallet(): UseWalletReturn {
     freighter: freighterState,
     connectFreighter,
     disconnectFreighter,
+    sendPayment,
     getWalletById,
     getWalletByAddress,
     formatAddress,
