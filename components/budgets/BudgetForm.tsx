@@ -3,7 +3,6 @@
 import React from "react";
 import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
-import { useOffline } from "@/components/offline/OfflineProvider";
 import { Budget } from "@/lib/api/client";
 import { isValidStellarAddress } from "@/lib/stellar/sharedBudgetContract";
 import { Progress } from "@/components/ui/progress";
@@ -86,6 +85,7 @@ interface BudgetFormProps {
 }
 
 export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, mode }: BudgetFormProps) {
+    budgetCount?: number;
     spent?: number;
 }
 
@@ -115,6 +115,7 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
     const sharedMemberCount = (initialData?.coOwners?.length ?? 0) + 1;
     const sharedThreshold = initialData?.approvalThreshold ?? 2;
 
+    
     // Calculate default end date once per component mount
     const [defaultEndDate] = React.useState(() => {
         return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
