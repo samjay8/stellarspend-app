@@ -2,16 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  RefreshCw,
-  Send,
-  ShieldAlert,
-  X,
-} from "lucide-react";
-import { useNotifications } from "@/context/NotificationContext";
+import { X, Send, ShieldAlert, Cpu, CheckCircle2, AlertTriangle, RefreshCw } from "lucide-react";
+import { sendPayment } from "@/lib/api/client";
+import { generateSpendingProof } from "@/lib/zk/generateSpendingProof";
 import { useOffline } from "@/components/offline/OfflineProvider";
+import { useToast } from "@/components/ui/use-toast";
 import { getRemaining, recordSpend } from "@/lib/stellar/spendingLimitsContract";
 import {
   fetchPaymentFee,
@@ -30,9 +25,10 @@ interface SendPaymentModalProps {
 type ModalStatus = "idle" | PaymentStatus | "success" | "failed";
 
 export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
-  const { addNotification } = useNotifications();
   const { isOnline, queueAction } = useOffline();
-  const { freighter, sendPayment } = useWallet();
+  const { toast } = useToast();
+  const { freighter } = useWallet();
+  const userPublicKey = freighter.publicKey || "GDQD6A4P422X44QW6UXO6R6AOTHOV4C6A4P422X44QW6UXO6R6AOTHO";
 
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
@@ -97,9 +93,12 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
       queueAction(
         "SEND_PAYMENT",
         `Send ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`,
-        { recipient, amount: Number(parsedAmount), asset, memo },
+        { recipient, amount: parsedAmount, asset }
       );
-      addNotification("info", `Offline: Payment of ${parsedAmount} ${asset} has been queued.`);
+      toast({
+        title: "Payment Queued",
+        description: `Offline: Payment of ${parsedAmount} ${asset} has been queued.`,
+      });
       onClose();
       return;
     }
@@ -114,6 +113,42 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
         const limitError = `${periodLabel} ${asset} limit reached — ${remainingFormatted} ${asset} remaining`;
         setFormError(limitError);
         addNotification("error", limitError);
+        setStatus("idle");
+        return;
+      }
+    } catch (err) {
+      console.error("Failed to check spending limit:", err);
+    }
+
+    // Determine if ZK proof is required
+    const requiresZkProof = parsedAmount > ZK_PROOF_THRESHOLD;
+    let spendingProof: Uint8Array | undefined = undefined;
+
+    if (requiresZkProof) {
+      setStatus("zk_proving");
+      setZkProgress(10);
+      try {
+        // Run ZK proving engine
+        const proofResult = await generateSpendingProof(
+          parsedAmount,
+          ZK_SPENDING_LIMIT_CEILING,
+          updateZkStatus
+        );
+        
+        spendingProof = proofResult.proof;
+        setStatus("zk_success");
+        setZkProgress(100);
+        await new Promise((resolve) => setTimeout(resolve, 800)); // Show success checkmark briefly
+      } catch (zkErr) {
+        const zkErrMsg = zkErr instanceof Error ? zkErr.message : String(zkErr);
+        console.error("ZK Proving failed:", zkErr);
+        setStatus("zk_failed");
+        setFormError(zkErrMsg || "Cryptographic proof generation failed constraint checks.");
+        toast({
+          title: "ZK Proving Failed",
+          description: zkErrMsg || "Cryptographic proof generation failed constraint checks.",
+          variant: "destructive",
+        });
         return;
       }
     } catch (error) {
@@ -138,18 +173,19 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
       await recordSpend(freighter.publicKey!, asset, Number(parsedAmount));
       setTxHash(payment.hash);
       setStatus("success");
-      window.dispatchEvent(
-        new CustomEvent(PAYMENT_CONFIRMED_EVENT, { detail: payment }),
-      );
-      addNotification(
-        "success",
-        `Successfully sent ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`,
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Payment submission failed.";
-      setStatus("failed");
-      setFormError(message);
-      addNotification("error", `Payment failed: ${message}`);
+      toast({
+        title: "Payment Successful",
+        description: `Successfully sent ${parsedAmount} ${asset} to ${recipient.substring(0, 8)}...`,
+      });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      setStatus("idle");
+      setFormError(errMsg || "Transaction submission failed.");
+      toast({
+        title: "Payment Failed",
+        description: errMsg || "Transaction submission failed.",
+        variant: "destructive",
+      });
     }
   };
 
