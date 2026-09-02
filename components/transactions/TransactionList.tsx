@@ -28,11 +28,13 @@ const PAGE_SIZE = 10;
 interface TransactionListProps {
   filters: FilterParams;
   onOpenDrawer: (tx: Transaction) => void;
+  categoryMap?: Record<string, string>;
 }
 
 export default function TransactionList({
   filters,
   onOpenDrawer,
+  categoryMap = {},
 }: TransactionListProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -381,6 +383,7 @@ export default function TransactionList({
                       key={tx.id}
                       transaction={tx}
                       onOpenDrawer={onOpenDrawer}
+                      category={categoryMap[tx.id]}
                     />
                   ))}
             </tbody>

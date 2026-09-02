@@ -111,6 +111,11 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
           : limitInfo.remainingAmount.toFixed(2);
         const limitError = `${periodLabel} ${asset} limit reached — ${remainingFormatted} ${asset} remaining`;
         setFormError(limitError);
+        toast({
+          title: "Spending Limit Reached",
+          description: limitError,
+          variant: "destructive",
+        });
         setStatus("idle");
         return;
       }
