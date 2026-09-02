@@ -106,6 +106,7 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
         setFormError(limitError);
         toast({
           title: "Spending Limit Reached",
+          title: "Limit Reached",
           description: limitError,
           variant: "destructive",
         });
