@@ -17,6 +17,16 @@ import {
   type WalletProvider,
   type WalletProviderId,
 } from "@/lib/wallet-providers";
+import {
+  submitPaymentTransaction,
+  type PaymentStatus,
+  type PendingPayment,
+  type SubmittedPayment,
+} from "@/lib/stellar/submitTransaction";
+import type {
+  PaymentAsset,
+  PaymentAssetIssuers,
+} from "@/lib/stellar/buildPaymentTransaction";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,6 +75,7 @@ export interface UseWalletReturn {
   connectFreighter: () => Promise<void>;
   disconnectFreighter: () => void;
   sendPayment: (input: SendPaymentInput) => Promise<SubmittedPayment>;
+
   // Helpers
   getWalletById: (id: string) => Wallet | undefined;
   getWalletByAddress: (address: string) => Wallet | undefined;
@@ -167,6 +178,28 @@ export function useWallet(): UseWalletReturn {
   }, []);
 
   const getActiveProvider = useCallback(() => activeProviderRef.current, []);
+
+  // ── sendPayment: delegates to submitPaymentTransaction ─────────────────
+
+  const sendPayment = useCallback(
+    async (input: SendPaymentInput): Promise<SubmittedPayment> => {
+      const source = providerState.publicKey;
+      if (!source) {
+        throw new Error("Connect a wallet before sending a payment.");
+      }
+      return submitPaymentTransaction({
+        source,
+        destination: input.destination,
+        amount: input.amount,
+        asset: input.asset,
+        memo: input.memo,
+        assetIssuers: input.assetIssuers,
+        onStatus: input.onStatus,
+        onSubmitted: input.onSubmitted,
+      });
+    },
+    [providerState.publicKey],
+  );
 
   // ── Legacy Freighter helpers (delegate to generic connect) ────────────────
 

@@ -302,8 +302,8 @@ export function ContributionWidget({
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button variant="secondary" className="w-full">
+          <DialogTrigger>
+            <Button variant="secondary" className="w-full" onClick={() => setOpen(true)}>
               Custom Amount
             </Button>
           </DialogTrigger>
