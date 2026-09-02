@@ -105,7 +105,7 @@ export default function SendPaymentModal({ onClose }: SendPaymentModalProps) {
         const limitError = `${periodLabel} ${asset} limit reached — ${remainingFormatted} ${asset} remaining`;
         setFormError(limitError);
         toast({
-          title: "Limit Reached",
+          title: "Spending Limit Reached",
           description: limitError,
           variant: "destructive",
         });
