@@ -20,7 +20,6 @@ import {
 } from "@/lib/api/client";
 import BudgetForm, { BudgetFormMode } from "@/components/budgets/BudgetForm";
 import PendingApprovalCard from "@/components/budgets/PendingApprovalCard";
-import BudgetForm from "@/components/budgets/BudgetForm";
 import BudgetCategoryBreakdownChart from "@/components/budgets/BudgetCategoryBreakdownChart";
 import { useOffline } from "@/components/offline/OfflineProvider";
 import { useToast } from "@/components/ui/use-toast";
@@ -364,7 +363,6 @@ export default function BudgetsPage() {
             initialData={editingBudget}
             isEditing={formMode !== 'create'}
             mode={formMode}
-            isEditing={!!editingBudget}
             budgetCount={budgets.length}
           />
         </div>
@@ -398,33 +396,6 @@ export default function BudgetsPage() {
                     Delete
                   </button>
                 </div>
-      {budgets.length > 0 && (
-        <BudgetCategoryBreakdownChart budgets={budgets} />
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {budgets.map((budget) => (
-          <div
-            key={budget.id}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {budget.name}
-              </h3>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEditBudget(budget)}
-                  className="text-blue-600 hover:text-blue-700 text-sm"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteBudget(budget.id)}
-                  className="text-red-600 hover:text-red-700 text-sm"
-                >
-                  Delete
-                </button>
               </div>
 
               <div className="space-y-2">
@@ -459,6 +430,10 @@ export default function BudgetsPage() {
             </div>
           ))}
         </div>
+
+        {budgets.length > 0 && (
+          <BudgetCategoryBreakdownChart budgets={budgets} />
+        )}
 
         {budgets.length === 0 && !showForm && (
           <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

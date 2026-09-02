@@ -5,7 +5,6 @@ import { z } from "zod";
 import { useForm } from "@/hooks/useForm";
 import { Budget } from "@/lib/api/client";
 import { isValidStellarAddress } from "@/lib/stellar/sharedBudgetContract";
-import { Progress } from "@/components/ui/progress";
 
 const budgetSchema = z
   .object({
@@ -82,9 +81,6 @@ interface BudgetFormProps {
     initialData?: Budget | null;
     isEditing?: boolean;
     mode?: BudgetFormMode;
-}
-
-export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, mode }: BudgetFormProps) {
     budgetCount?: number;
     spent?: number;
 }
@@ -107,8 +103,7 @@ function getProgressTextColor(percentage: number): string {
     return "text-green-600 dark:text-green-400";
 }
 
-export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, spent = 0 }: BudgetFormProps) {
-    const { isOnline: _isOnline, queueAction: _queueAction } = useOffline();
+export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing = false, mode, spent = 0 }: BudgetFormProps) {
     const formMode: BudgetFormMode = mode ?? (isEditing ? 'edit' : 'create');
     const isProposeMode = formMode === 'propose' || (formMode === 'edit' && !!initialData?.isShared);
     const isSharedBudget = isProposeMode || (formMode === 'edit' && !!initialData?.isShared);
@@ -129,7 +124,6 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
         register,
         handleSubmit,
         formState: { errors, isValid, isSubmitting },
-        reset: _reset,
         setValue,
         watch,
     } = useForm<BudgetFormData>({
@@ -196,6 +190,9 @@ export default function BudgetForm({ onSubmit, onCancel, initialData, isEditing 
                     <p className="text-xs text-amber-800 dark:text-amber-200">
                         This is a shared budget — changes require {sharedThreshold} of {sharedMemberCount} member approvals before they take effect.
                     </p>
+                </div>
+            )}
+
             {isEditing && budgetLimit > 0 && (
                 <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex justify-between items-center mb-2">

@@ -35,6 +35,8 @@ export type {
   SharedBudgetChangeType,
   SharedBudgetChangeStatus,
 } from '@/lib/stellar/sharedBudgetContract';
+
+import {
   fetchBalances as horizonFetchBalances,
   fetchTransactions as horizonFetchTransactions,
   fetchRecentTransactions as horizonFetchRecentTransactions,
